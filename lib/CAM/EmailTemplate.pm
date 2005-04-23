@@ -4,10 +4,28 @@ package CAM::EmailTemplate;
 
 CAM::EmailTemplate - Template-based email message sender
 
+=head1 LICENSE
+
+Copyright 2005 Clotho Advanced Media, Inc., <cpan@clotho.com>
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+There are many, many other templating and emailing modules on CPAN.
+Unless you have a specific reason for using this one, you may have
+better searching for a different one.
+
+This module is a bit clumsy in the way it sends email (relying on
+Sendmail), and doesn't thoroughly ensure that the outgoing emails are
+valid, but it is very handy in its integration with a templating
+engine.
+
 =head1 SYNOPSIS
 
   use CAM::EmailTemplate;
-
+  
   my $template = new CAM::EmailTemplate($filename);
   $template->setParams(recipient => 'user@foo.com',
                        bar => 'baz', kelp => 'green');
@@ -38,7 +56,7 @@ use Carp;
 use CAM::Template;
 
 our @ISA = qw(CAM::Template);
-our $VERSION = '0.15';
+our $VERSION = '0.92';
 
 # Package globals
 
@@ -49,18 +67,27 @@ my @global_possible_paths = (
                              );
 my $global_sendmail_path = "";  # cache the path when we find it
 
-#==============================
 
-=head1 FUNCTIONS
+=head1 INSTANCE METHODS
 
 =over 4
 
 =cut
 
-#==============================
+=item setEnvelopSender ADDRESS
 
+Changed the sender as reported by sendmail to the remote host.  Note
+that this may be visible to the end recipient.
 
-#==============================
+=cut
+
+sub setEnvelopSender
+{
+   my $self = shift;
+   my $sender = shift;
+
+   $self->{envelopSender} = $sender;
+}
 
 =item send
 
@@ -164,7 +191,12 @@ sub deliver
    {
       local $ENV{PATH} = "";
       local *MAIL;
-      if (!open (MAIL, "| $sendmail -i -t"))
+      my $cmd = "$sendmail -i -t";
+      if ($self->{envelopeSender})
+      {
+         $cmd .= " -f".$self->{envelopeSender};
+      }
+      if (!open (MAIL, "| $cmd"))
       {
          $error = "Failed to contact the mail agent";
       }
@@ -216,14 +248,14 @@ Here is an example template, formatted for consumption by sendmail:
   MIME-Version: 1.0
   Content-Type: text/plain
   X-Sender: CAM::EmailTemplate
-
+  
   This is a sample CAM::EmailTemplate file.  The blank line between
   the header and the body is crucial.  The 'To:', 'From:' and
   'Subject:' lines are required.  The others are optional.
-
+  
   Although this example is indented in the documentation, the real
   template should have no indentation in the mail header.
-
+  
   Best wishes,
   Chris
 
@@ -235,23 +267,23 @@ message:
   Subject: ::subject::
   MIME-Version: 1.0
   Content-Type: multipart/alternative; boundary="----_=_AnotherMIMEPiece"
-
+  
   This message is in MIME format. You will only see this message if
   your mail program does not speak MIME.
-
+  
   ------_=_AnotherMIMEPiece
   Content-Type: text/plain; charset=us-ascii
   Content-Transfer-Encoding: 7bit
-
+  
   This is a sample CAM::EmailTemplate message.  This part is
   _plain_text_.  Generally, you should have the same message in both
   parts, but this demo breaks that convention.
- 
+  
   ::myName::
   ------_=_AnotherMIMEPiece
   Content-Type: text/html; charset=us-ascii
   Content-Transfer-Encoding: 7bit
-
+  
   This is a sample CAM::EmailTemplate message.  This part is <u>html</u>.
   Generally, you should have the same message in both parts, but this
   demo breaks that convention  slightly.<br><br>::myName::
@@ -263,6 +295,6 @@ as shown above.
 
 =head1 AUTHOR
 
-Chris Dolan, Clotho Advanced Media, I<chris@clotho.com>
+Clotho Advanced Media Inc., I<cpan@clotho.com>
 
-=cut
+Primary developer: Chris Dolan

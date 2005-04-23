@@ -1,7 +1,10 @@
+index.html
 ChangeLog
-COPYRIGHT
-EmailTemplate.pm
+lib/CAM/EmailTemplate.pm
+Build.PL
+LICENSE
 Makefile.PL
 MANIFEST
 README
 test.pl
+META.yml
